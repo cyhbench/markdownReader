@@ -3,7 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Markdown Viewer v1.1</title>
+<title>Markdown Viewer v1.2</title>
+<meta name="version" content="1.2">
 <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@11.9.0/styles/github-dark.min.css">
 <script src="https://cdn.jsdelivr.net/npm/highlight.js@11.9.0/highlight.min.js"></script>
@@ -88,8 +89,9 @@ header h1 { font-size: 16px; font-weight: 600; }
   background: #fff;
   color: #333;
   line-height: 1.7;
+  /* iOS/Safari 對 break-word 有時不夠力，anywhere 比較穩 */
+  overflow-wrap: anywhere;
   word-break: break-word;
-  overflow-wrap: break-word;
 }
 
 /* Markdown rendered styles */
@@ -106,6 +108,9 @@ header h1 { font-size: 16px; font-weight: 600; }
   border-radius: 3px;
   font-size: 0.9em;
   font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  white-space: pre-wrap;
 }
 #preview pre {
   background: #1e1e1e;
@@ -115,10 +120,18 @@ header h1 { font-size: 16px; font-weight: 600; }
   overflow-x: auto;
   margin: 0.8em 0;
 }
+
+/* 小螢幕：代碼塊也盡量換行，避免橫向捲動 */
+@media (max-width: 520px) {
+  #preview pre { overflow-x: hidden; }
+}
 #preview pre code {
   background: none;
   padding: 0;
   color: inherit;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 #preview blockquote {
   border-left: 4px solid #4fc3f7;
@@ -190,7 +203,7 @@ pre:hover .copy-btn { opacity: 1; }
 
 <div class="app">
   <header>
-    <h1>📝 MD Viewer <small style="font-size:12px;color:#888">v1.1</small></h1>
+    <h1>📝 MD Viewer <small style="font-size:12px;color:#888">v1.2</small></h1>
     <div style="display:flex;gap:8px">
       <button class="btn" onclick="exportHtml()">匯出</button>
       <button class="btn" onclick="clearAll()">清除</button>
