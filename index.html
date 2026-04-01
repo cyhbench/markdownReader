@@ -3,9 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Markdown Viewer v1.2</title>
-<meta name="version" content="1.2">
-<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<title>Markdown Viewer v1.3</title>
+<meta name="version" content="1.3">
+<script src="https://cdn.jsdelivr.net/npm/marked@4.3.0/marked.min.js"></script>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@11.9.0/styles/github-dark.min.css">
 <script src="https://cdn.jsdelivr.net/npm/highlight.js@11.9.0/highlight.min.js"></script>
 <style>
@@ -89,12 +89,10 @@ header h1 { font-size: 16px; font-weight: 600; }
   background: #fff;
   color: #333;
   line-height: 1.7;
-  /* iOS/Safari 對 break-word 有時不夠力，anywhere 比較穩 */
   overflow-wrap: anywhere;
   word-break: break-word;
 }
 
-/* Markdown rendered styles */
 #preview h1 { font-size: 1.8em; margin: 0.8em 0 0.4em; border-bottom: 1px solid #eee; padding-bottom: 0.3em; }
 #preview h2 { font-size: 1.5em; margin: 0.7em 0 0.35em; border-bottom: 1px solid #eee; padding-bottom: 0.25em; }
 #preview h3 { font-size: 1.25em; margin: 0.6em 0 0.3em; }
@@ -120,8 +118,6 @@ header h1 { font-size: 16px; font-weight: 600; }
   overflow-x: auto;
   margin: 0.8em 0;
 }
-
-/* 小螢幕：代碼塊也盡量換行，避免橫向捲動 */
 @media (max-width: 520px) {
   #preview pre { overflow-x: hidden; }
 }
@@ -148,7 +144,6 @@ header h1 { font-size: 16px; font-weight: 600; }
 #preview hr { border: none; border-top: 1px solid #ddd; margin: 1.2em 0; }
 #preview input[type="checkbox"] { margin-right: 6px; }
 
-/* Split mode (tablet+) */
 @media (min-width: 768px) {
   .tabs { display: none; }
   .pane { display: flex !important; }
@@ -158,7 +153,6 @@ header h1 { font-size: 16px; font-weight: 600; }
   .pane { flex: none; height: 100%; }
 }
 
-/* Dark mode for preview */
 @media (prefers-color-scheme: dark) {
   #preview { background: #1a1a2e; color: #e0e0e0; }
   #preview h1, #preview h2 { border-color: #333; }
@@ -196,6 +190,10 @@ header h1 { font-size: 16px; font-weight: 600; }
   transition: opacity 0.2s;
 }
 pre:hover .copy-btn { opacity: 1; }
+/* 觸控裝置沒有 hover，直接顯示複製按鈕 */
+@media (hover: none) {
+  .copy-btn { opacity: 1; }
+}
 .copy-btn:active { background: rgba(255,255,255,0.3); }
 </style>
 </head>
@@ -203,16 +201,16 @@ pre:hover .copy-btn { opacity: 1; }
 
 <div class="app">
   <header>
-    <h1>📝 MD Viewer <small style="font-size:12px;color:#888">v1.2</small></h1>
+    <h1>📝 MD Viewer <small style="font-size:12px;color:#888">v1.3</small></h1>
     <div style="display:flex;gap:8px">
-      <button class="btn" onclick="exportHtml()">匯出</button>
-      <button class="btn" onclick="clearAll()">清除</button>
+      <button class="btn" id="exportBtn">匯出</button>
+      <button class="btn" id="clearBtn">清除</button>
     </div>
   </header>
 
   <div class="tabs">
-    <button class="tab active" data-pane="editor" onclick="switchTab('editor')">✏️ 編輯</button>
-    <button class="tab" data-pane="preview" onclick="switchTab('preview')">👁 預覽</button>
+    <button class="tab active" data-pane="editor">✏️ 編輯</button>
+    <button class="tab" data-pane="preview">👁 預覽</button>
   </div>
 
   <div class="panes">
@@ -230,7 +228,7 @@ const editor = document.getElementById('editor');
 const preview = document.getElementById('preview');
 let debounceTimer;
 
-// Configure marked with syntax highlighting
+// marked v4 API — 鎖定版本 4.3.0，避免 v5+ 移除 highlight option 導致失效
 marked.setOptions({
   breaks: true,
   gfm: true,
@@ -244,25 +242,30 @@ marked.setOptions({
 });
 
 function render() {
-  const md = editor.value;
-  preview.innerHTML = marked.parse(md);
-  // Add copy buttons to code blocks
+  preview.innerHTML = marked.parse(editor.value);
   preview.querySelectorAll('pre').forEach(pre => {
     if (pre.querySelector('.copy-btn')) return;
     const btn = document.createElement('button');
     btn.className = 'copy-btn';
     btn.textContent = '複製';
-    btn.onclick = () => {
+    btn.addEventListener('click', () => {
       const code = pre.querySelector('code');
-      navigator.clipboard.writeText(code.textContent);
-      btn.textContent = '已複製!';
-      setTimeout(() => btn.textContent = '複製', 1500);
-    };
+      navigator.clipboard.writeText(code ? code.textContent : pre.textContent)
+        .then(() => {
+          btn.textContent = '已複製!';
+          setTimeout(() => { btn.textContent = '複製'; }, 1500);
+        })
+        .catch(() => {
+          btn.textContent = '失敗';
+          setTimeout(() => { btn.textContent = '複製'; }, 1500);
+        });
+    });
     pre.style.position = 'relative';
     pre.appendChild(btn);
   });
-  // Save to localStorage
-  localStorage.setItem('md-content', md);
+  try {
+    localStorage.setItem('md-content', editor.value);
+  } catch { /* QuotaExceededError */ }
 }
 
 function switchTab(name) {
@@ -275,41 +278,21 @@ function clearAll() {
   if (editor.value && !confirm('確定清除？')) return;
   editor.value = '';
   render();
-  localStorage.removeItem('md-content');
+  try { localStorage.removeItem('md-content'); } catch {}
 }
 
 function exportHtml() {
-  const html = `<!DOCTYPE html>
-<html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width">
-<title>Markdown Export</title>
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@11.9.0/styles/github.min.css">
-<style>body{max-width:800px;margin:40px auto;padding:0 20px;font-family:-apple-system,sans-serif;line-height:1.7;color:#333}
-h1,h2{border-bottom:1px solid #eee;padding-bottom:.3em}pre{background:#1e1e1e;color:#d4d4d4;padding:12px;border-radius:6px;overflow-x:auto}
-code{background:#f5f5f5;padding:2px 6px;border-radius:3px;font-size:.9em}pre code{background:none;padding:0}
-blockquote{border-left:4px solid #4fc3f7;padding:8px 16px;background:#f8f9fa}
-table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:8px 12px}th{background:#f5f5f5}
-img{max-width:100%}a{color:#1976d2}</style></head><body>${preview.innerHTML}</body></html>`;
+  const html = '<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width"><title>Markdown Export</title><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@11.9.0/styles/github.min.css"><style>body{max-width:800px;margin:40px auto;padding:0 20px;font-family:-apple-system,sans-serif;line-height:1.7;color:#333}h1,h2{border-bottom:1px solid #eee;padding-bottom:.3em}pre{background:#1e1e1e;color:#d4d4d4;padding:12px;border-radius:6px;overflow-x:auto}code{background:#f5f5f5;padding:2px 6px;border-radius:3px;font-size:.9em}pre code{background:none;padding:0}blockquote{border-left:4px solid #4fc3f7;padding:8px 16px;background:#f8f9fa}table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:8px 12px}th{background:#f5f5f5}img{max-width:100%}a{color:#1976d2}</style></head><body>' + preview.innerHTML + '</body></html>';
   const blob = new Blob([html], { type: 'text/html' });
+  const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
+  a.href = url;
   a.download = 'markdown-export.html';
   a.click();
+  setTimeout(() => URL.revokeObjectURL(url), 10000);
 }
 
-// Live preview with debounce
-editor.addEventListener('input', () => {
-  clearTimeout(debounceTimer);
-  debounceTimer = setTimeout(render, 150);
-});
-
-// Load saved content
-const saved = localStorage.getItem('md-content');
-if (saved) {
-  editor.value = saved;
-  render();
-}
-
-// Tab key support
+// Tab 鍵插入兩個空格
 editor.addEventListener('keydown', (e) => {
   if (e.key === 'Tab') {
     e.preventDefault();
@@ -321,7 +304,23 @@ editor.addEventListener('keydown', (e) => {
   }
 });
 
-// Initial render
+// 即時預覽 debounce
+editor.addEventListener('input', () => {
+  clearTimeout(debounceTimer);
+  debounceTimer = setTimeout(render, 150);
+});
+
+// Tab 切換
+document.querySelectorAll('.tab').forEach(tab => {
+  tab.addEventListener('click', () => switchTab(tab.dataset.pane));
+});
+
+document.getElementById('exportBtn').addEventListener('click', exportHtml);
+document.getElementById('clearBtn').addEventListener('click', clearAll);
+
+// 載入已存內容
+const saved = localStorage.getItem('md-content');
+if (saved) editor.value = saved;
 render();
 </script>
 </body>
