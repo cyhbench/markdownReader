@@ -16,7 +16,7 @@
 
 ## 使用方式
 
-直接開啟線上版本，或將 `index.html` 下載後在瀏覽器開啟（離線可用）。
+直接開啟線上版本，或將 `index.html` 下載後在瀏覽器開啟（需連網，marked 與 highlight.js 從 CDN 載入）。
 
 ```
 git clone https://github.com/cyhbench/markdownReader.git
@@ -39,6 +39,7 @@ git clone https://github.com/cyhbench/markdownReader.git
 
 | 版本 | 日期 | 變更 |
 |------|------|------|
+| v1.5 | 2026-11-10 | 修正手機編輯區只有兩行高、匯出檔多出複製鈕與程式碼配色看不清、Tab 後無法 Ctrl+Z |
 | v1.4 | 2026-04-08 | 修正 highlight.js CDN URL（404）、加 render() 錯誤處理、mangle:false |
 | v1.3 | 2026-04-01 | 鎖定 marked@4.3.0、加語法高亮、觸控複製按鈕、addEventListener 重構 |
 | v1.2 | 2026-03-21 | 修正小螢幕文字換行（break-word / overflow-wrap: anywhere）|

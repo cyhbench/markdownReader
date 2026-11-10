@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Markdown Viewer v1.4</title>
-<meta name="version" content="1.4">
+<title>Markdown Viewer v1.5</title>
+<meta name="version" content="1.5">
 <script src="https://cdn.jsdelivr.net/npm/marked@4.3.0/marked.min.js"></script>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@11.9.0/styles/github-dark.min.css">
 <script src="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/highlight.min.js"></script>
@@ -58,6 +58,9 @@ header h1 { font-size: 16px; font-weight: 600; }
   border-bottom-color: #4fc3f7;
   background: rgba(79, 195, 247, 0.05);
 }
+
+/* 手機版也要是 flex，.pane 的 flex:1 才會撐滿剩餘高度 */
+.panes { display: flex; flex-direction: column; flex: 1; min-height: 0; }
 
 .pane {
   flex: 1;
@@ -150,7 +153,7 @@ header h1 { font-size: 16px; font-weight: 600; }
   .pane { display: flex !important; }
   .editor-pane { width: 50%; border-right: 1px solid #333; }
   .preview-pane { width: 50%; }
-  .panes { display: flex; flex: 1; overflow: hidden; }
+  .panes { flex-direction: row; overflow: hidden; }
   .pane { flex: none; height: 100%; }
 }
 
@@ -202,7 +205,7 @@ pre:hover .copy-btn { opacity: 1; }
 
 <div class="app">
   <header>
-    <h1>📝 MD Viewer <small style="font-size:12px;color:#888">v1.4</small></h1>
+    <h1>📝 MD Viewer <small style="font-size:12px;color:#888">v1.5</small></h1>
     <div style="display:flex;gap:8px">
       <button class="btn" id="exportBtn">匯出</button>
       <button class="btn" id="clearBtn">清除</button>
@@ -288,7 +291,11 @@ function clearAll() {
 }
 
 function exportHtml() {
-  const html = '<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width"><title>Markdown Export</title><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@11.9.0/styles/github.min.css"><style>body{max-width:800px;margin:40px auto;padding:0 20px;font-family:-apple-system,sans-serif;line-height:1.7;color:#333}h1,h2{border-bottom:1px solid #eee;padding-bottom:.3em}pre{background:#1e1e1e;color:#d4d4d4;padding:12px;border-radius:6px;overflow-x:auto}code{background:#f5f5f5;padding:2px 6px;border-radius:3px;font-size:.9em}pre code{background:none;padding:0}blockquote{border-left:4px solid #4fc3f7;padding:8px 16px;background:#f8f9fa}table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:8px 12px}th{background:#f5f5f5}img{max-width:100%}a{color:#1976d2}</style></head><body>' + preview.innerHTML + '</body></html>';
+  // 匯出檔沒有複製功能，去掉 render() 加的按鈕
+  const content = preview.cloneNode(true);
+  content.querySelectorAll('.copy-btn').forEach(b => b.remove());
+  // pre 是深色底，配色要用 github-dark，淺色 github 的深藍字串會看不見
+  const html = '<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width"><title>Markdown Export</title><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@11.9.0/styles/github-dark.min.css"><style>body{max-width:800px;margin:40px auto;padding:0 20px;font-family:-apple-system,sans-serif;line-height:1.7;color:#333}h1,h2{border-bottom:1px solid #eee;padding-bottom:.3em}pre{background:#1e1e1e;color:#d4d4d4;padding:12px;border-radius:6px;overflow-x:auto}code{background:#f5f5f5;padding:2px 6px;border-radius:3px;font-size:.9em}pre code{background:none;padding:0}blockquote{border-left:4px solid #4fc3f7;padding:8px 16px;background:#f8f9fa}table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:8px 12px}th{background:#f5f5f5}img{max-width:100%}a{color:#1976d2}</style></head><body>' + content.innerHTML + '</body></html>';
   const blob = new Blob([html], { type: 'text/html' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
@@ -302,11 +309,11 @@ function exportHtml() {
 editor.addEventListener('keydown', (e) => {
   if (e.key === 'Tab') {
     e.preventDefault();
-    const start = editor.selectionStart;
-    const end = editor.selectionEnd;
-    editor.value = editor.value.substring(0, start) + '  ' + editor.value.substring(end);
-    editor.selectionStart = editor.selectionEnd = start + 2;
-    render();
+    // execCommand 會保留復原紀錄並觸發 input；直接改 editor.value 會讓 Ctrl+Z 失效
+    if (!document.execCommand('insertText', false, '  ')) {
+      editor.setRangeText('  ', editor.selectionStart, editor.selectionEnd, 'end');
+      render();
+    }
   }
 });
 
