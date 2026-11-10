@@ -29,6 +29,7 @@ git clone https://github.com/cyhbench/markdownReader.git
 |------|------------|
 | [marked](https://github.com/markedjs/marked) | `4.3.0`（鎖版，v5+ 移除 `highlight` option）|
 | [highlight.js](https://highlightjs.org/) | `11.9.0` |
+| [DOMPurify](https://github.com/cure53/DOMPurify) | `3.4.17`（過濾內嵌 HTML，防 XSS）|
 | CDN | jsDelivr（marked via npm；highlight.js via cdn-release）|
 | 儲存 | localStorage（無伺服器、無 cookie）|
 
@@ -39,6 +40,7 @@ git clone https://github.com/cyhbench/markdownReader.git
 
 | 版本 | 日期 | 變更 |
 |------|------|------|
+| v1.6 | 2026-11-10 | 內嵌 HTML 經 DOMPurify 過濾，貼上別人的 .md 不會執行 script |
 | v1.5 | 2026-11-10 | 修正手機編輯區只有兩行高、匯出檔多出複製鈕與程式碼配色看不清、Tab 後無法 Ctrl+Z |
 | v1.4 | 2026-04-08 | 修正 highlight.js CDN URL（404）、加 render() 錯誤處理、mangle:false |
 | v1.3 | 2026-04-01 | 鎖定 marked@4.3.0、加語法高亮、觸控複製按鈕、addEventListener 重構 |

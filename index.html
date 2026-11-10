@@ -3,9 +3,10 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Markdown Viewer v1.5</title>
-<meta name="version" content="1.5">
+<title>Markdown Viewer v1.6</title>
+<meta name="version" content="1.6">
 <script src="https://cdn.jsdelivr.net/npm/marked@4.3.0/marked.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/dompurify@3.4.17/dist/purify.min.js"></script>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@11.9.0/styles/github-dark.min.css">
 <script src="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/highlight.min.js"></script>
 <style>
@@ -205,7 +206,7 @@ pre:hover .copy-btn { opacity: 1; }
 
 <div class="app">
   <header>
-    <h1>📝 MD Viewer <small style="font-size:12px;color:#888">v1.5</small></h1>
+    <h1>📝 MD Viewer <small style="font-size:12px;color:#888">v1.6</small></h1>
     <div style="display:flex;gap:8px">
       <button class="btn" id="exportBtn">匯出</button>
       <button class="btn" id="clearBtn">清除</button>
@@ -248,9 +249,14 @@ marked.setOptions({
 
 function render() {
   try {
-    preview.innerHTML = marked.parse(editor.value);
+    // 內嵌 HTML 經 DOMPurify 過濾：貼上別人的 .md 時，onerror 之類的 script 不會執行
+    // （github.io 同 origin 的其他工具共用 localStorage）
+    preview.innerHTML = DOMPurify.sanitize(marked.parse(editor.value));
   } catch (e) {
-    preview.innerHTML = '<pre style="color:red;white-space:pre-wrap">' + e.message + '</pre>';
+    const pre = document.createElement('pre');
+    pre.style.cssText = 'color:red;white-space:pre-wrap';
+    pre.textContent = e.message;
+    preview.replaceChildren(pre);
     return;
   }
   preview.querySelectorAll('pre').forEach(pre => {
